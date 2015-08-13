@@ -429,7 +429,7 @@ angular.module('zeppelinWebApp')
     $scope.startSaveTimer();
 
     $timeout(function() {
-      $scope.setParagraphMode($scope.editor.getSession(), $scope.editor.getCursorPosition());
+      $scope.setParagraphMode($scope.editor.getSession(), $scope.dirtyText, $scope.editor.getCursorPosition());
     });
   };
 
@@ -458,26 +458,28 @@ angular.module('zeppelinWebApp')
         // not applying emacs key binding while the binding override Ctrl-v. default behavior of paste text on windows.
       }
 
+      $scope.setParagraphMode = function(session, paragraphText, pos) {
 
-      $scope.setParagraphMode = function(session, pos) {
-          var paragraphText = session.getValue();
+        // Evaluate the mode only if the first 30 characters of the paragraph have been modified or the the position is undefined. 
+        if ( (typeof pos === 'undefined') || (pos.row === 0 && pos.column < 30)) {
 
-          // Evaluate the mode only if the change is at the beging of the paragraph
-          if (pos.row === 0 && pos.column < 30) {
-             var newMode = editorModes[0][1];
+          // Defaults to spark mode (ditorModes[0][1] == %spark).
+          var newMode = editorModes[0][1];
 
-             for (var i = 0, len = editorModes.length; i < len; i++ ) {
-                 var modeElement = editorModes[i];
-                 if (modeElement[0].test(paragraphText)) {
-                     newMode = modeElement[1];
-                     break;
-                 }
-             }
-
-             if (String(newMode).localeCompare(String(session.getMode().$id)) !== 0) {
-                 session.setMode(newMode);
-             }
+          for (var i = 0, len = editorModes.length; i < len; i++) {
+            var modeElement = editorModes[i];
+            if (modeElement[0].test(paragraphText)){
+              newMode = modeElement[1];
+              break;
+            }
           }
+
+          // Update to the new mode only if it differs from the existing one.
+          var oldMode = session.getMode().$id;
+          if (String(newMode).localeCompare(String(oldMode)) !== 0) {
+            session.setMode(newMode);
+          }
+        }
       };
 
       var remoteCompleter = {
@@ -538,7 +540,7 @@ angular.module('zeppelinWebApp')
         $scope.editor.resize();
       });
 
-      $scope.setParagraphMode($scope.editor.getSession(), $scope.editor.getCursorPosition());
+      $scope.setParagraphMode($scope.editor.getSession(), $scope.editor.getSession().getValue());
 
       $scope.editor.commands.addCommand({
         name: 'run',
