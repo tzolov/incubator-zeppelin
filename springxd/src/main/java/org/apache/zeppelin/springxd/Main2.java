@@ -4,6 +4,8 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
 
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.springframework.xd.rest.client.impl.SpringXDTemplate;
 import org.springframework.xd.rest.domain.CompletionKind;
 
@@ -23,5 +25,7 @@ public class Main2 {
     for (String c : completions) {
       System.out.println("  " + c);
     }
+    
+   
   }
 }
