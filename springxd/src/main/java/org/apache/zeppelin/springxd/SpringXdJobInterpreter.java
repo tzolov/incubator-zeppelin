@@ -22,84 +22,76 @@ import org.apache.zeppelin.interpreter.InterpreterPropertyBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.xd.rest.domain.CompletionKind;
-import org.springframework.xd.rest.domain.StreamDefinitionResource;
 
 
 /**
- * SpringXD interpreter for Zeppelin.
+ * SpringXD Job interpreter for Zeppelin.
  * 
  * <ul>
- * <li>{@code springxd.url} - JDBC URL to connect to.</li>
+ * <li>{@code springxd.url} - SpringXD URL to connect to.</li>
  * </ul>
  * 
  * <p>
  * How to use: <br/>
- * {@code %xd.stream} <br/>
+ * {@code %xd.job} <br/>
  * {@code 
- *  tweets = twittersearch --query=Obama --outputType=application/json | gemfire-json-server 
- *    --useLocator=true --host=ambari.localdomain --port=10334 
- *    --regionName=regionTweet --keyExpression=payload.getField('id_str')
- *  tweetsCount = tap:stream:tweets > json-to-tuple | transform --expression='payload.id_str' 
- *    | counter --name=tweetCounter
  * }
  * </p>
  *
  */
-public class SpringXdStreamInterpreter extends AbstractSpringXdInterpreter {
+public class SpringXdJobInterpreter extends AbstractSpringXdInterpreter {
 
-  private Logger logger = LoggerFactory.getLogger(SpringXdStreamInterpreter.class);
+  private Logger logger = LoggerFactory.getLogger(SpringXdJobInterpreter.class);
 
   static {
     Interpreter.register(
-        "stream",
+        "job",
         "xd",
-        SpringXdStreamInterpreter.class.getName(),
+        SpringXdJobInterpreter.class.getName(),
         new InterpreterPropertyBuilder().add(SPRINGXD_URL, DEFAULT_SPRINGXD_URL,
             "The URL for SpringXD REST API.").build());
   }
 
   /**
-   * Provide SpringXD stream completion implementation
+   * Provide SpringXD Job completion implementation
    */
-  private class StreamCompletion extends ResourceCompletion {
+  private class JobCompletion extends ResourceCompletion {
     @Override
     public List<String> doSpringXdCompletion(String completionPreffix) {
-      return getXdTemplate().completionOperations().completions(CompletionKind.stream,
+      return getXdTemplate().completionOperations().completions(CompletionKind.job,
           completionPreffix, SINGLE_LEVEL_OF_DETAILS);
     }
   }
 
   /**
-   * Implements {@link CreateDestroyResource} to provide Spring XD Streams resource management.
+   * Implements {@link DeployedResourcesManager} to provide Spring XD Jobs resource management.
    *
    */
-  private class StreamDeployedResourcesManager extends DeployedResourcesManager {
+  private class JobDeployedResourcesManager extends DeployedResourcesManager {
 
     @Override
     public void doCreateResource(String name, String definition) {
-      @SuppressWarnings("unused")
-      StreamDefinitionResource stream =
-          getXdTemplate().streamOperations().createStream(name, definition, DEPLOY);
+      getXdTemplate().jobOperations().createJob(name, definition, DEPLOY);
     }
 
     @Override
     public void doDestroyRsource(String name) {
-      getXdTemplate().streamOperations().destroy(name);
+      getXdTemplate().jobOperations().destroy(name);
     }
   }
 
-  public SpringXdStreamInterpreter(Properties property) {
+  public SpringXdJobInterpreter(Properties property) {
     super(property);
-    logger.info("Create SpringXdStreamInterpreter");
+    logger.info("Create SpringXdJobInterpreter");
   }
 
   @Override
   public ResourceCompletion doCreateResourceCompletion() {
-    return new StreamCompletion();
+    return new JobCompletion();
   }
 
   @Override
   public DeployedResourcesManager doCreateDeployedResourcesManager() {
-    return new StreamDeployedResourcesManager();
+    return new JobDeployedResourcesManager();
   }
 }
