@@ -61,7 +61,7 @@ public class SpringXdStreamInterpreter extends AbstractSpringXdInterpreter {
   /**
    * Provide SpringXD stream completion implementation
    */
-  private class StreamCompletion extends ResourceCompletion {
+  private class StreamCompletion extends AbstractResourceCompletion {
     @Override
     public List<String> doSpringXdCompletion(String completionPreffix) {
       return getXdTemplate().completionOperations().completions(CompletionKind.stream,
@@ -73,7 +73,7 @@ public class SpringXdStreamInterpreter extends AbstractSpringXdInterpreter {
    * Implements {@link CreateDestroyResource} to provide Spring XD Streams resource management.
    *
    */
-  private class StreamDeployedResourcesManager extends DeployedResourcesManager {
+  private class StreamDeployedResourcesManager extends AbstractDeployedResourcesManager {
 
     @Override
     public void doCreateResource(String name, String definition) {
@@ -94,12 +94,12 @@ public class SpringXdStreamInterpreter extends AbstractSpringXdInterpreter {
   }
 
   @Override
-  public ResourceCompletion doCreateResourceCompletion() {
+  public AbstractResourceCompletion doCreateResourceCompletion() {
     return new StreamCompletion();
   }
 
   @Override
-  public DeployedResourcesManager doCreateDeployedResourcesManager() {
+  public AbstractDeployedResourcesManager doCreateDeployedResourcesManager() {
     return new StreamDeployedResourcesManager();
   }
 }

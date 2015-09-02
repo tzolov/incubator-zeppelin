@@ -50,9 +50,9 @@ public abstract class AbstractSpringXdInterpreter extends Interpreter {
 
   private SpringXDTemplate xdTemplate;
 
-  private DeployedResourcesManager deployedResourcesManager;
+  private AbstractDeployedResourcesManager deployedResourcesManager;
 
-  private ResourceCompletion resourceCompletion;
+  private AbstractResourceCompletion resourceCompletion;
 
   public AbstractSpringXdInterpreter(Properties property) {
     super(property);
@@ -61,12 +61,12 @@ public abstract class AbstractSpringXdInterpreter extends Interpreter {
   /**
    * @return Returns a Resource (Stream or Job) specific completion implementation
    */
-  public abstract ResourceCompletion doCreateResourceCompletion();
+  public abstract AbstractResourceCompletion doCreateResourceCompletion();
 
   /**
    * @return Returns a Resource (stream or job) specific deployed resource manager.
    */
-  public abstract DeployedResourcesManager doCreateDeployedResourcesManager();
+  public abstract AbstractDeployedResourcesManager doCreateDeployedResourcesManager();
 
 
   @Override
@@ -107,7 +107,8 @@ public abstract class AbstractSpringXdInterpreter extends Interpreter {
     String errorMessage = "";
     try {
       if (!isBlank(multiLineResourceDefinitions)) {
-        for (String line : multiLineResourceDefinitions.split(ResourceCompletion.LINE_SEPARATOR)) {
+        for (String line : multiLineResourceDefinitions
+            .split(AbstractResourceCompletion.LINE_SEPARATOR)) {
 
           Pair<String, String> namedDefinition = NamedDefinitionParser.getNamedDefinition(line);
 

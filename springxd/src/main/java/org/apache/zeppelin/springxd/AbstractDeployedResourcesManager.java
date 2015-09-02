@@ -32,15 +32,15 @@ import com.google.common.base.Throwables;
  * @author tzoloc
  *
  */
-public abstract class DeployedResourcesManager {
+public abstract class AbstractDeployedResourcesManager {
 
   public static final boolean DEPLOY = true;
 
-  private Logger logger = LoggerFactory.getLogger(DeployedResourcesManager.class);
+  private Logger logger = LoggerFactory.getLogger(AbstractDeployedResourcesManager.class);
 
   private Map<String, Map<String, List<String>>> note2paragraph2Resources;
 
-  public DeployedResourcesManager() {
+  public AbstractDeployedResourcesManager() {
     this.note2paragraph2Resources = new HashMap<String, Map<String, List<String>>>();
   }
 

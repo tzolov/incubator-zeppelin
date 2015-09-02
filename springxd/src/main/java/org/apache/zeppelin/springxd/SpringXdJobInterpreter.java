@@ -55,7 +55,7 @@ public class SpringXdJobInterpreter extends AbstractSpringXdInterpreter {
   /**
    * Provide SpringXD Job completion implementation
    */
-  private class JobCompletion extends ResourceCompletion {
+  private class JobCompletion extends AbstractResourceCompletion {
     @Override
     public List<String> doSpringXdCompletion(String completionPreffix) {
       return getXdTemplate().completionOperations().completions(CompletionKind.job,
@@ -64,10 +64,11 @@ public class SpringXdJobInterpreter extends AbstractSpringXdInterpreter {
   }
 
   /**
-   * Implements {@link DeployedResourcesManager} to provide Spring XD Jobs resource management.
+   * Implements {@link AbstractDeployedResourcesManager} to provide Spring XD Jobs resource
+   * management.
    *
    */
-  private class JobDeployedResourcesManager extends DeployedResourcesManager {
+  private class JobDeployedResourcesManager extends AbstractDeployedResourcesManager {
 
     @Override
     public void doCreateResource(String name, String definition) {
@@ -86,12 +87,12 @@ public class SpringXdJobInterpreter extends AbstractSpringXdInterpreter {
   }
 
   @Override
-  public ResourceCompletion doCreateResourceCompletion() {
+  public AbstractResourceCompletion doCreateResourceCompletion() {
     return new JobCompletion();
   }
 
   @Override
-  public DeployedResourcesManager doCreateDeployedResourcesManager() {
+  public AbstractDeployedResourcesManager doCreateDeployedResourcesManager() {
     return new JobDeployedResourcesManager();
   }
 }

@@ -573,6 +573,7 @@ angular.module('zeppelinWebApp')
 
       // autocomplete on 'ctrl+.'
       $scope.editor.commands.bindKey('ctrl-.', 'startAutocomplete');
+      $scope.editor.commands.bindKey('tab', 'startAutocomplete');
       $scope.editor.commands.bindKey('ctrl-space', null);
 
       // handle cursor moves

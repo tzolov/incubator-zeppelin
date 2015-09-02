@@ -14,9 +14,9 @@
  */
 package org.apache.zeppelin.springxd;
 
+import static java.lang.Math.min;
 import static org.apache.commons.collections.CollectionUtils.isEmpty;
 import static org.apache.commons.lang.StringUtils.isBlank;
-import static java.lang.Math.min;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -29,9 +29,9 @@ import org.slf4j.LoggerFactory;
  * Completion utility that helps to adapt the SpringXD completion API with the ACE editor
  * requirements.
  */
-public abstract class ResourceCompletion {
+public abstract class AbstractResourceCompletion {
 
-  private Logger logger = LoggerFactory.getLogger(ResourceCompletion.class);
+  private Logger logger = LoggerFactory.getLogger(AbstractResourceCompletion.class);
 
   public static final String EMPTY_PREFFIX = "";
 
@@ -41,26 +41,40 @@ public abstract class ResourceCompletion {
 
   public static final int SINGLE_LEVEL_OF_DETAILS = 1;
 
+  /**
+   * To be implemented by the underlying SpringXD mechanism (Stream or Job) and use the SpringXD
+   * completion API.
+   * 
+   * @param completionPreffix - input completion string
+   * @return Returns completions in SpringXD format
+   */
   public abstract List<String> doSpringXdCompletion(String completionPreffix);
 
+  /**
+   * Delegates the completion to the underlying doSpringXdCompletion method and transforms the
+   * completion results from SpringXD into ACE completions
+   * 
+   * @param buf - input buffer from zeppelin editor
+   * @param cursor - cursor position in the zeppelin editor
+   * @return Returns completions adapted for the ACE editor.
+   */
   public List<String> completion(String buf, int cursor) {
     List<String> zeppelinCompletions = null;
 
-    if (!isBlank(buf)) {
+    if (buf != null) {
       try {
 
-        String completionPreffix = ResourceCompletion.getCompletionPreffix(buf, cursor);
+        String completionPreffix = getCompletionPreffix(buf, cursor);
 
-        logger.info("Buffer [" + buf + "], Len=" + buf.length() + ", Cursor=" + cursor
+        logger.debug("Buffer [" + buf + "], Len=" + buf.length() + ", Cursor=" + cursor
             + ", Preffix [" + completionPreffix + "]");
 
         List<String> xdCompletions = this.doSpringXdCompletion(completionPreffix);
 
-        zeppelinCompletions =
-            ResourceCompletion.convertXdToZeppelinCompletions(xdCompletions, completionPreffix);
+        zeppelinCompletions = convertXdToZeppelinCompletions(xdCompletions, completionPreffix);
 
       } catch (Exception e) {
-        logger.error("Completion error", e);
+        logger.warn("Completion error", e);
       }
     }
     return zeppelinCompletions;
@@ -77,7 +91,7 @@ public abstract class ResourceCompletion {
    * @return Returns a line that start at the begining of the line cursor is positioned until the
    *         cursor position (or the end of the line).
    */
-  static String getCompletionPreffix(String buffer, int cursor) {
+  String getCompletionPreffix(String buffer, int cursor) {
 
     if (isBlank(buffer)) {
       return EMPTY_PREFFIX;
@@ -109,7 +123,7 @@ public abstract class ResourceCompletion {
    * @return Returns a modified list of the same size. Each element in the list has the prefix part
    *         removed.
    */
-  static List<String> convertXdToZeppelinCompletions(List<String> xdCompletions, String preffix) {
+  List<String> convertXdToZeppelinCompletions(List<String> xdCompletions, String preffix) {
 
     // Noting to filter
     if (isBlank(preffix)) {
@@ -122,8 +136,7 @@ public abstract class ResourceCompletion {
 
       zeppelinCompletions = new ArrayList<String>();
 
-      String preffixToReplace =
-          preffix.substring(0, ResourceCompletion.getLastWhitespaceIndex(preffix) + 1);
+      String preffixToReplace = preffix.substring(0, getLastWhitespaceIndex(preffix) + 1);
 
       for (String c : xdCompletions) {
 
@@ -136,7 +149,7 @@ public abstract class ResourceCompletion {
     return zeppelinCompletions;
   }
 
-  private static int getLastWhitespaceIndex(String s) {
+  private int getLastWhitespaceIndex(String s) {
     if (!isBlank(s)) {
       for (int i = s.length() - 1; i >= 0; i--) {
         if (Character.isWhitespace(s.charAt(i)) || s.charAt(i) == '|' || s.charAt(i) == '=') {

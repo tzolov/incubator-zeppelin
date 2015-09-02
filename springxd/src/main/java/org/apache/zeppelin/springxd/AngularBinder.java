@@ -19,11 +19,11 @@ import org.apache.zeppelin.display.AngularObjectWatcher;
 import org.apache.zeppelin.interpreter.InterpreterContext;
 
 /**
- * @author tzoloc
- *
+ * Helper class that leverages the IntepreterContext Angular support to register client side
+ * controle with the back-end
  */
 public class AngularBinder {
-  
+
   /**
    * Defines the deployed streams status.
    */
@@ -32,8 +32,8 @@ public class AngularBinder {
   };
 
   @SuppressWarnings("unchecked")
-  public static void bind(InterpreterContext context, String name, Object value,
-      String noteId, AngularObjectWatcher watcher) {
+  public static void bind(InterpreterContext context, String name, Object value, String noteId,
+      AngularObjectWatcher watcher) {
 
     AngularObjectRegistry registry = context.getAngularObjectRegistry();
 
@@ -47,5 +47,4 @@ public class AngularBinder {
       registry.get(name, noteId).addWatcher(watcher);
     }
   }
-
 }
