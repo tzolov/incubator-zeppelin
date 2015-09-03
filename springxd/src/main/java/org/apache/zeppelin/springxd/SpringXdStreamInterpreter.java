@@ -24,7 +24,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.xd.rest.domain.CompletionKind;
 import org.springframework.xd.rest.domain.StreamDefinitionResource;
 
-
 /**
  * SpringXD interpreter for Zeppelin.
  * 
@@ -58,48 +57,37 @@ public class SpringXdStreamInterpreter extends AbstractSpringXdInterpreter {
             "The URL for SpringXD REST API.").build());
   }
 
-  /**
-   * Provide SpringXD stream completion implementation
-   */
-  private class StreamCompletion extends AbstractResourceCompletion {
-    @Override
-    public List<String> doSpringXdCompletion(String completionPreffix) {
-      return getXdTemplate().completionOperations().completions(CompletionKind.stream,
-          completionPreffix, SINGLE_LEVEL_OF_DETAILS);
-    }
-  }
-
-  /**
-   * Implements {@link CreateDestroyResource} to provide Spring XD Streams resource management.
-   *
-   */
-  private class StreamDeployedResourcesManager extends AbstractDeployedResourcesManager {
-
-    @Override
-    public void doCreateResource(String name, String definition) {
-      @SuppressWarnings("unused")
-      StreamDefinitionResource stream =
-          getXdTemplate().streamOperations().createStream(name, definition, DEPLOY);
-    }
-
-    @Override
-    public void doDestroyRsource(String name) {
-      getXdTemplate().streamOperations().destroy(name);
-    }
-  }
-
   public SpringXdStreamInterpreter(Properties property) {
     super(property);
     logger.info("Create SpringXdStreamInterpreter");
   }
 
   @Override
-  public AbstractResourceCompletion doCreateResourceCompletion() {
-    return new StreamCompletion();
+  public AbstractSpringXdResourceCompletion doCreateResourceCompletion() {
+    return new AbstractSpringXdResourceCompletion() {
+      @Override
+      public List<String> doSpringXdCompletion(String completionPreffix) {
+        return getXdTemplate().completionOperations().completions(CompletionKind.stream,
+            completionPreffix, SINGLE_LEVEL_OF_DETAILS);
+      }
+    };
   }
 
   @Override
-  public AbstractDeployedResourcesManager doCreateDeployedResourcesManager() {
-    return new StreamDeployedResourcesManager();
+  public AbstractSpringXdResourceManager doCreateResourceManager() {
+    return new AbstractSpringXdResourceManager() {
+      
+      @Override
+      public void doCreateResource(String name, String definition) {
+        @SuppressWarnings("unused")
+        StreamDefinitionResource stream =
+            getXdTemplate().streamOperations().createStream(name, definition, DEPLOY);
+      }
+
+      @Override
+      public void doDestroyRsource(String name) {
+        getXdTemplate().streamOperations().destroy(name);
+      }
+    };
   }
 }

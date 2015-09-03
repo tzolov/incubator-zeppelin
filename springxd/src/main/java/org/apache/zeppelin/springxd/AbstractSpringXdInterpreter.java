@@ -14,6 +14,7 @@
  */
 package org.apache.zeppelin.springxd;
 
+import static java.lang.String.format;
 import static org.apache.commons.lang.StringUtils.isBlank;
 
 import java.net.URI;
@@ -35,9 +36,9 @@ import org.springframework.xd.rest.client.impl.SpringXDTemplate;
 import com.google.common.base.Joiner;
 import com.google.common.base.Throwables;
 
-
 /**
- * Common SpringXD interpreter for Zeppelin.
+ * SpringXD {@link Interpreter} supper class extended by both {@link SpringXdStreamInterpreter} and
+ * {@link SpringXdJobInterpreter}.
  */
 public abstract class AbstractSpringXdInterpreter extends Interpreter {
 
@@ -50,9 +51,9 @@ public abstract class AbstractSpringXdInterpreter extends Interpreter {
 
   private SpringXDTemplate xdTemplate;
 
-  private AbstractDeployedResourcesManager deployedResourcesManager;
+  private AbstractSpringXdResourceManager xdResourcesManager;
 
-  private AbstractResourceCompletion resourceCompletion;
+  private AbstractSpringXdResourceCompletion xdResourceCompletion;
 
   public AbstractSpringXdInterpreter(Properties property) {
     super(property);
@@ -61,13 +62,16 @@ public abstract class AbstractSpringXdInterpreter extends Interpreter {
   /**
    * @return Returns a Resource (Stream or Job) specific completion implementation
    */
-  public abstract AbstractResourceCompletion doCreateResourceCompletion();
+  public abstract AbstractSpringXdResourceCompletion doCreateResourceCompletion();
 
   /**
    * @return Returns a Resource (stream or job) specific deployed resource manager.
    */
-  public abstract AbstractDeployedResourcesManager doCreateDeployedResourcesManager();
+  public abstract AbstractSpringXdResourceManager doCreateResourceManager();
 
+  protected SpringXDTemplate doCreateSpringXDTemplate(URI uri) {
+    return new SpringXDTemplate(uri);
+  }
 
   @Override
   public void open() {
@@ -75,9 +79,9 @@ public abstract class AbstractSpringXdInterpreter extends Interpreter {
     close();
     try {
       String springXdUrl = getProperty(SPRINGXD_URL);
-      xdTemplate = new SpringXDTemplate(new URI(springXdUrl));
-      deployedResourcesManager = doCreateDeployedResourcesManager();
-      resourceCompletion = doCreateResourceCompletion();
+      xdTemplate = doCreateSpringXDTemplate(new URI(springXdUrl));
+      xdResourcesManager = doCreateResourceManager();
+      xdResourceCompletion = doCreateResourceCompletion();
       exceptionOnConnect = null;
     } catch (URISyntaxException e) {
       logger.error("Failed to connect to the SpringXD cluster", e);
@@ -88,8 +92,8 @@ public abstract class AbstractSpringXdInterpreter extends Interpreter {
 
   @Override
   public void close() {
-    if (deployedResourcesManager != null) {
-      deployedResourcesManager.destroyAllNotebookDeployedResources();
+    if (xdResourcesManager != null) {
+      xdResourcesManager.destroyAllNotebookDeployedResources();
     }
   }
 
@@ -102,13 +106,13 @@ public abstract class AbstractSpringXdInterpreter extends Interpreter {
 
     // (Re)deploying jobs means that any previous instances (created by the same
     // notebook/paragraph) will be destroyed
-    deployedResourcesManager.destroyDeployedResourceBy(ctx.getNoteId(), ctx.getParagraphId());
+    xdResourcesManager.destroyDeployedResourceBy(ctx.getNoteId(), ctx.getParagraphId());
 
     String errorMessage = "";
     try {
       if (!isBlank(multiLineResourceDefinitions)) {
         for (String line : multiLineResourceDefinitions
-            .split(AbstractResourceCompletion.LINE_SEPARATOR)) {
+            .split(AbstractSpringXdResourceCompletion.LINE_SEPARATOR)) {
 
           Pair<String, String> namedDefinition = NamedDefinitionParser.getNamedDefinition(line);
 
@@ -117,8 +121,8 @@ public abstract class AbstractSpringXdInterpreter extends Interpreter {
 
           if (!isBlank(resourceName) && !isBlank(resourceDefinition)) {
 
-            deployedResourcesManager.deployResource(ctx.getNoteId(), ctx.getParagraphId(),
-                resourceName, resourceDefinition);
+            xdResourcesManager.deployResource(ctx.getNoteId(), ctx.getParagraphId(), resourceName,
+                resourceDefinition);
 
             logger.info("Deployed: [" + resourceName + "]:[" + resourceDefinition + "]");
           } else {
@@ -127,7 +131,7 @@ public abstract class AbstractSpringXdInterpreter extends Interpreter {
         }
       }
 
-      String angularDestroyButton = createDestroyButton(ctx);
+      String angularDestroyButton = doCreateAngularResponse(ctx);
 
       logger.info(angularDestroyButton);
 
@@ -136,33 +140,37 @@ public abstract class AbstractSpringXdInterpreter extends Interpreter {
     } catch (Exception e) {
       logger.error("Failed to deploy xd resource!", e);
       errorMessage = Throwables.getRootCause(e).getMessage();
-      deployedResourcesManager.destroyDeployedResourceBy(ctx.getNoteId(), ctx.getParagraphId());
+      xdResourcesManager.destroyDeployedResourceBy(ctx.getNoteId(), ctx.getParagraphId());
     }
 
     return new InterpreterResult(Code.ERROR, "Failed to deploy XD resource: " + errorMessage);
   }
 
-  private String createDestroyButton(InterpreterContext ctx) {
+  protected String doCreateAngularResponse(InterpreterContext ctx) {
 
     // Use the Angualr response to hook a resource destroy button
-    String resourceStatusId = "resourceStatus_" + ctx.getParagraphId().replace("-", "_");
+    String xdResourceStatusId = "rxdResourceStatus_" + ctx.getParagraphId().replace("-", "_");
 
-    AngularBinder.bind(ctx, resourceStatusId, ResourceStatus.DEPLOYED.name(), ctx.getNoteId(),
+    AngularBinder.bind(ctx, xdResourceStatusId, ResourceStatus.DEPLOYED.name(), ctx.getNoteId(),
         new DestroyEventWatcher(ctx));
 
     List<String> deployedResources =
-        deployedResourcesManager.getDeployedResourceBy(ctx.getNoteId(), ctx.getParagraphId());
+        xdResourcesManager.getDeployedResourceBy(ctx.getNoteId(), ctx.getParagraphId());
 
     String destroyButton =
-        String.format("%%angular <button ng-click='%s = \"%s\"'> " + " [%s] : {{%s}} </button>",
-            resourceStatusId, ResourceStatus.DESTROYED.name(),
-            Joiner.on(", ").join(deployedResources).toString(), resourceStatusId);
+        format("%%angular <button ng-click='%s = \"%s\"'> " + " [%s] : {{%s}} </button>",
+            xdResourceStatusId, ResourceStatus.DESTROYED.name(),
+            Joiner.on(", ").join(deployedResources).toString(), xdResourceStatusId);
 
     return destroyButton;
   }
 
   @Override
-  public void cancel(InterpreterContext context) {}
+  public void cancel(InterpreterContext context) {
+    if (xdResourcesManager != null) {
+      xdResourcesManager.destroyDeployedResourceBy(context.getNoteId(), context.getParagraphId());
+    }
+  }
 
   @Override
   public FormType getFormType() {
@@ -176,7 +184,7 @@ public abstract class AbstractSpringXdInterpreter extends Interpreter {
 
   @Override
   public List<String> completion(String buf, int cursor) {
-    return resourceCompletion.completion(buf, cursor);
+    return xdResourceCompletion.completion(buf, cursor);
   }
 
   private class DestroyEventWatcher extends AngularObjectWatcher {
@@ -188,8 +196,7 @@ public abstract class AbstractSpringXdInterpreter extends Interpreter {
     @Override
     public void watch(Object oldValue, Object newValue, InterpreterContext context) {
       if (ResourceStatus.DESTROYED.name().equals("" + newValue)) {
-        deployedResourcesManager.destroyDeployedResourceBy(context.getNoteId(),
-            context.getParagraphId());
+        xdResourcesManager.destroyDeployedResourceBy(context.getNoteId(), context.getParagraphId());
       }
     }
   }

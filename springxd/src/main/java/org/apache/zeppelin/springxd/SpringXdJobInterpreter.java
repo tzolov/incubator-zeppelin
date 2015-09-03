@@ -52,47 +52,34 @@ public class SpringXdJobInterpreter extends AbstractSpringXdInterpreter {
             "The URL for SpringXD REST API.").build());
   }
 
-  /**
-   * Provide SpringXD Job completion implementation
-   */
-  private class JobCompletion extends AbstractResourceCompletion {
-    @Override
-    public List<String> doSpringXdCompletion(String completionPreffix) {
-      return getXdTemplate().completionOperations().completions(CompletionKind.job,
-          completionPreffix, SINGLE_LEVEL_OF_DETAILS);
-    }
-  }
-
-  /**
-   * Implements {@link AbstractDeployedResourcesManager} to provide Spring XD Jobs resource
-   * management.
-   *
-   */
-  private class JobDeployedResourcesManager extends AbstractDeployedResourcesManager {
-
-    @Override
-    public void doCreateResource(String name, String definition) {
-      getXdTemplate().jobOperations().createJob(name, definition, DEPLOY);
-    }
-
-    @Override
-    public void doDestroyRsource(String name) {
-      getXdTemplate().jobOperations().destroy(name);
-    }
-  }
-
   public SpringXdJobInterpreter(Properties property) {
     super(property);
     logger.info("Create SpringXdJobInterpreter");
   }
 
   @Override
-  public AbstractResourceCompletion doCreateResourceCompletion() {
-    return new JobCompletion();
+  public AbstractSpringXdResourceCompletion doCreateResourceCompletion() {
+    return new AbstractSpringXdResourceCompletion() {
+      @Override
+      public List<String> doSpringXdCompletion(String completionPreffix) {
+        return getXdTemplate().completionOperations().completions(CompletionKind.job,
+            completionPreffix, SINGLE_LEVEL_OF_DETAILS);
+      }
+    };
   }
 
   @Override
-  public AbstractDeployedResourcesManager doCreateDeployedResourcesManager() {
-    return new JobDeployedResourcesManager();
+  public AbstractSpringXdResourceManager doCreateResourceManager() {
+    return new AbstractSpringXdResourceManager() {
+      @Override
+      public void doCreateResource(String name, String definition) {
+        getXdTemplate().jobOperations().createJob(name, definition, DEPLOY);
+      }
+
+      @Override
+      public void doDestroyRsource(String name) {
+        getXdTemplate().jobOperations().destroy(name);
+      }
+    };
   }
 }

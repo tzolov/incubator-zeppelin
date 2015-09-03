@@ -14,9 +14,10 @@
  */
 package org.apache.zeppelin.springxd;
 
+import static org.apache.commons.lang3.StringUtils.isBlank;
+
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import static org.apache.commons.lang3.StringUtils.*;
 
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -28,6 +29,8 @@ import org.apache.commons.lang3.tuple.Pair;
 public class NamedDefinitionParser {
 
   private static final Pattern NAMED_STREAM_PATTERN = Pattern.compile("\\s*(\\w+)\\s*=\\s*(.*)");
+  private static final int NAME_GROUP_INDEX = 1;
+  private static final int DEFINITION_GROUP_INDEX = 2;
 
   /**
    * Splits the input line into a name and a definition parts, divided by the '=' character.
@@ -38,18 +41,17 @@ public class NamedDefinitionParser {
    */
   public static Pair<String, String> getNamedDefinition(String line) {
 
-    String namePart = "";
-    String definitionPart = "";
+    String name = "";
+    String definition = "";
 
     if (!isBlank(line)) {
       Matcher matcher = NAMED_STREAM_PATTERN.matcher(line);
 
       if (matcher.matches()) {
-        namePart = matcher.group(1);
-        definitionPart = matcher.group(2);
+        name = matcher.group(NAME_GROUP_INDEX);
+        definition = matcher.group(DEFINITION_GROUP_INDEX);
       }
     }
-
-    return new ImmutablePair<String, String>(namePart, definitionPart);
+    return new ImmutablePair<String, String>(name, definition);
   }
 }

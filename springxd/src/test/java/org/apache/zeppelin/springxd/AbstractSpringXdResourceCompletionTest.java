@@ -14,8 +14,8 @@
  */
 package org.apache.zeppelin.springxd;
 
-import static org.apache.zeppelin.springxd.AbstractResourceCompletion.EMPTY_ZEPPELIN_COMPLETION;
-import static org.apache.zeppelin.springxd.AbstractResourceCompletion.LINE_SEPARATOR;
+import static org.apache.zeppelin.springxd.AbstractSpringXdResourceCompletion.EMPTY_ZEPPELIN_COMPLETION;
+import static org.apache.zeppelin.springxd.AbstractSpringXdResourceCompletion.LINE_SEPARATOR;
 import static org.junit.Assert.assertEquals;
 
 import java.util.ArrayList;
@@ -26,15 +26,15 @@ import org.junit.Before;
 import org.junit.Test;
 
 /**
- * Unit tests for CompletionUtil
+ * Unit tests for {@link AbstractSpringXdResourceCompletion}
  */
-public class AbstractResourceCompletionTest {
+public class AbstractSpringXdResourceCompletionTest {
 
-  private AbstractResourceCompletion resourceCompletion;
+  private AbstractSpringXdResourceCompletion resourceCompletion;
 
   @Before
   public void before() {
-    resourceCompletion = new AbstractResourceCompletion() {
+    resourceCompletion = new AbstractSpringXdResourceCompletion() {
       @Override
       public List<String> doSpringXdCompletion(String completionPreffix) {
         return Arrays.asList(completionPreffix + "one", completionPreffix + "two",

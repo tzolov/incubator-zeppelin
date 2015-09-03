@@ -29,9 +29,9 @@ import org.slf4j.LoggerFactory;
  * Completion utility that helps to adapt the SpringXD completion API with the ACE editor
  * requirements.
  */
-public abstract class AbstractResourceCompletion {
+public abstract class AbstractSpringXdResourceCompletion {
 
-  private Logger logger = LoggerFactory.getLogger(AbstractResourceCompletion.class);
+  private Logger logger = LoggerFactory.getLogger(AbstractSpringXdResourceCompletion.class);
 
   public static final String EMPTY_PREFFIX = "";
 

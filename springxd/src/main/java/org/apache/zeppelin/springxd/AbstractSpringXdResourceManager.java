@@ -14,6 +14,7 @@
  */
 package org.apache.zeppelin.springxd;
 
+import static org.apache.commons.collections.CollectionUtils.isEmpty;
 import static org.apache.commons.lang.StringUtils.isBlank;
 
 import java.util.ArrayList;
@@ -22,27 +23,54 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.collections.CollectionUtils;
+import org.apache.zeppelin.interpreter.remote.RemoteInterpreter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Throwables;
 
 /**
- * @author tzoloc
- *
+ * Supper calls used by the Stream and Job interpreters to control (and own) the resources (streams
+ * or jobs) deployed in SpringXD.
+ * 
+ * Zeppelin starts one {@link RemoteInterpreter} instance per interpreter type. This single instance
+ * manages the resources for all notebooks and paragraphs. The
+ * {@link AbstractSpringXdResourceManager} keeps the track of which resource in which notebook and
+ * paragraph is created and consecutively allows its safe destruction.
+ * 
+ * The implementing class should use the SpringXD client API to deploy and/or destroy the XD
+ * resources (e.g. streams or jobs).
+ * 
+ * Note: SpringXD requires an unique Stream and Job names. They must be unique across all Notes and
+ * Paragraphs!
  */
-public abstract class AbstractDeployedResourcesManager {
+public abstract class AbstractSpringXdResourceManager {
 
   public static final boolean DEPLOY = true;
 
-  private Logger logger = LoggerFactory.getLogger(AbstractDeployedResourcesManager.class);
+  private Logger logger = LoggerFactory.getLogger(AbstractSpringXdResourceManager.class);
 
   private Map<String, Map<String, List<String>>> note2paragraph2Resources;
 
-  public AbstractDeployedResourcesManager() {
+  public AbstractSpringXdResourceManager() {
     this.note2paragraph2Resources = new HashMap<String, Map<String, List<String>>>();
   }
+
+  /**
+   * Creates a new Stream or Job SpringXD resource.
+   * 
+   * @param name Resource (stream or job) name
+   * 
+   * @param definition Resource (stream or job) definition
+   */
+  public abstract void doCreateResource(String name, String definition);
+
+  /**
+   * Destroys stream or job resource by name
+   * 
+   * @param name Stream or Job name to destroy.
+   */
+  public abstract void doDestroyRsource(String name);
 
   public void deployResource(String noteId, String paragraphId, String resourceName,
       String resourceDefininition) {
@@ -78,11 +106,9 @@ public abstract class AbstractDeployedResourcesManager {
       while (it.hasNext()) {
         String resourceName = it.next();
         try {
-
           doDestroyRsource(resourceName);
-
-          logger.info("Destroyed :" + resourceName + " from [" + noteId + ":" + paragraphId + "]");
           it.remove();
+          logger.debug("Destroyed :" + resourceName + " from [" + noteId + ":" + paragraphId + "]");
         } catch (Exception e) {
           logger.error("Failed to destroy resource: " + resourceName, Throwables.getRootCause(e));
         }
@@ -91,15 +117,17 @@ public abstract class AbstractDeployedResourcesManager {
   }
 
   public void destroyDeployedResourceBy(String noteId) {
-    Iterator<String> it = note2paragraph2Resources.keySet().iterator();
-    while (it.hasNext()) {
-      String paragraphId = it.next();
-      destroyDeployedResourceBy(noteId, paragraphId);
+    if (note2paragraph2Resources.containsKey(noteId)) {
+      Iterator<String> paragraphIds = note2paragraph2Resources.get(noteId).keySet().iterator();
+      while (paragraphIds.hasNext()) {
+        String paragraphId = paragraphIds.next();
+        destroyDeployedResourceBy(noteId, paragraphId);
+      }
     }
   }
 
   public void destroyAllNotebookDeployedResources() {
-    if (!CollectionUtils.isEmpty(note2paragraph2Resources.keySet())) {
+    if (!isEmpty(note2paragraph2Resources.keySet())) {
       Iterator<String> it = note2paragraph2Resources.keySet().iterator();
       while (it.hasNext()) {
         String noteId = it.next();
@@ -107,20 +135,4 @@ public abstract class AbstractDeployedResourcesManager {
       }
     }
   }
-
-  /**
-   * Creates a new Stream or Job SpringXD resource.
-   * 
-   * @param name Resource (stream or job) name
-   * 
-   * @param definition Resource (stream or job) definition
-   */
-  public abstract void doCreateResource(String name, String definition);
-
-  /**
-   * Destroys stream or job resource by name
-   * 
-   * @param name Stream or Job name to destroy.
-   */
-  public abstract void doDestroyRsource(String name);
 }
