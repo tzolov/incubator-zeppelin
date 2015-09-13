@@ -26,7 +26,8 @@ angular.module('zeppelinWebApp')
     'ace/mode/scala': /^%spark/,
     'ace/mode/sql': /^%(\w*\.)?\wql/,
     'ace/mode/markdown': /^%md/,
-    'ace/mode/sh': /^%sh/
+    'ace/mode/sh': /^%sh/ ,
+    'ace/mode/text' : /^%xd/
   };
 
   // Controller init
@@ -572,6 +573,7 @@ angular.module('zeppelinWebApp')
 
       // autocomplete on 'ctrl+.'
       $scope.editor.commands.bindKey('ctrl-.', 'startAutocomplete');
+      $scope.editor.commands.bindKey('tab', 'startAutocomplete');
       $scope.editor.commands.bindKey('ctrl-space', null);
 
       // handle cursor moves
