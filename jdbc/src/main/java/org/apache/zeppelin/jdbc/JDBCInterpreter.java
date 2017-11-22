@@ -763,9 +763,9 @@ public class JDBCInterpreter extends KerberosInterpreter {
       //In case user ran an insert/update/upsert statement
       if (connection != null) {
         try {
-          if (!connection.getAutoCommit()) {
-            connection.commit();
-          }
+//          if (!connection.getAutoCommit()) {
+//            connection.commit();
+//          }
           connection.close();
         } catch (SQLException e) { /*ignored*/ }
       }
